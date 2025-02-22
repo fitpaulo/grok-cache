@@ -25,3 +25,14 @@ grok-cache.py <command> [options] [args]
 
 ## Commands
  * `-c, copy <section> <key>`: Copy a prompt to clipboard.
+ * `-l, list`: List all cache entries.
+ * `-a, add <section> <key>`: Add/update a prompt (prompts for input).
+ * `-d, delete <section> <key>` (or `del`): Delete a prompt
+ * `-h`: Show help.
+
+## Structure
+ * `src/grok-cache.py`: Main script.
+ * `cache/cache.toml`: Cache file (excluded from Git—store privately).
+
+## Licenece
+GPL-3
