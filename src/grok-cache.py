@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-
-import tomli  # For parsing TOML (Python 3.11+)
-import tomli_w  # For writing TOML
+import tomli
+import tomli_w
 import pyperclip
 import click
 import os
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
 cache_rel_path = "../cache/cache.toml"
-cache_file_path = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), cache_rel_path
-)
+cache_file_path = os.path.join(script_dir, cache_rel_path)
 
 
 @click.group(invoke_without_command=True)
@@ -18,15 +16,17 @@ def cli(ctx):
     """Grok Cache CLI: Manage cache statements for Grok interactions.
 
     Commands:
-      copy <section> <key>  Copy a cache statement to clipboard
-      list                  List all cache sections and keys
-      add <section> <key>   Add or update a cache statement
+      copy (-c) <section> <key>  Copy a cache statement to clipboard
+      list (-l)                  List all cache sections and keys
+      add (-a) <section> <key>   Add or update a cache statement
+      delete (-d) <section> <key>  Delete a cache statement (alias: del)
     """
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
 
 
-@cli.command()
+@cli.command(name="copy", short_help="Copy a cache statement")
+@click.option("-c", is_flag=True, help="Copy a cache statement (alias)")
 @click.argument("section")
 @click.argument("key")
 def copy(section, key):
@@ -41,8 +41,9 @@ def copy(section, key):
         click.echo(f"No '{key}' found in '{section}'.")
 
 
-@cli.command()
-def list():
+@cli.command(name="list", short_help="List all cache statements")
+@click.option("-l", is_flag=True, help="List all cache statements (alias)")
+def list_cmd():
     """List all cache statements by section."""
     with open(cache_file_path, "rb") as f:
         data = tomli.load(f)
@@ -52,33 +53,29 @@ def list():
             click.echo(f"  {key}")
 
 
-@cli.command()
+@cli.command(name="add", short_help="Add or update a cache statement")
+@click.option("-a", is_flag=True, help="Add or update a cache statement (alias)")
 @click.argument("section")
 @click.argument("key")
 def add(section, key):
     """Add or update a cache statement in the TOML file."""
-    # Load existing data or start fresh
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "rb") as f:
             data = tomli.load(f)
     else:
         data = {}
 
-    # Prompt user for the cache statement
     prompt = click.prompt(f"Enter cache statement for [{section}].{key}", type=str)
-
-    # Add or update section and key
     if section not in data:
         data[section] = {}
     data[section][key] = prompt
-
-    # Write back to file
     with open(cache_file_path, "wb") as f:
         tomli_w.dump(data, f)
     click.echo(f"Added/Updated '{key}' in '{section}'.")
 
 
-@cli.command()
+@cli.command(name="delete", short_help="Delete a cache statement", aliases=["del"])
+@click.option("-d", is_flag=True, help="Delete a cache statement (alias)")
 @click.argument("section")
 @click.argument("key")
 def delete(section, key):
@@ -92,7 +89,7 @@ def delete(section, key):
 
     try:
         del data[section][key]
-        if not data[section]:  # If section’s empty, remove it
+        if not data[section]:
             del data[section]
         with open(cache_file_path, "wb") as f:
             tomli_w.dump(data, f)
